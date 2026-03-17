@@ -13,14 +13,6 @@ text-align:center;
 background:#bde0ff;
 }
 
-h1{
-margin-top:10px;
-}
-
-#ui{
-margin-bottom:10px;
-}
-
 #game{
 width:330px;
 margin:auto;
@@ -42,7 +34,6 @@ overflow:hidden;
 position:absolute;
 bottom:-100px;
 width:100%;
-text-align:center;
 font-size:60px;
 cursor:pointer;
 transition:0.25s;
@@ -57,6 +48,16 @@ bottom:10px;
 transform:scale(0.8);
 }
 
+select{
+font-size:16px;
+padding:5px;
+}
+
+button{
+font-size:16px;
+padding:6px 12px;
+}
+
 </style>
 </head>
 
@@ -64,12 +65,21 @@ transform:scale(0.8);
 
 <h1>モグラ叩き</h1>
 
-<div id="ui">
 スコア: <span id="score">0</span>
-　時間: <span id="time">30</span>
+時間: <span id="time">30</span>
+
 <br><br>
+
+難易度:
+<select id="difficulty">
+<option value="easy">Easy</option>
+<option value="normal" selected>Normal</option>
+<option value="hard">Hard</option>
+</select>
+
 <button onclick="startGame()">スタート</button>
-</div>
+
+<br><br>
 
 <div id="game"></div>
 
@@ -78,11 +88,40 @@ transform:scale(0.8);
 const game = document.getElementById("game")
 const scoreText = document.getElementById("score")
 const timeText = document.getElementById("time")
+const difficultySelect = document.getElementById("difficulty")
 
-let score = 0
-let time = 30
+let score=0
+let time=30
 let timer
-let moles = []
+let moles=[]
+
+let spawnSpeed=700
+let moleTime=800
+let bombRate=0.2
+
+function setDifficulty(){
+
+const diff=difficultySelect.value
+
+if(diff==="easy"){
+spawnSpeed=900
+moleTime=900
+bombRate=0.1
+}
+
+if(diff==="normal"){
+spawnSpeed=700
+moleTime=800
+bombRate=0.2
+}
+
+if(diff==="hard"){
+spawnSpeed=450
+moleTime=600
+bombRate=0.35
+}
+
+}
 
 function createBoard(){
 
@@ -140,9 +179,7 @@ const mole=moles[index]
 
 if(mole.classList.contains("up")) return
 
-const bombChance=Math.random()
-
-if(bombChance<0.2){
+if(Math.random()<bombRate){
 
 mole.textContent="💣"
 mole.dataset.type="bomb"
@@ -158,18 +195,23 @@ mole.classList.add("up")
 
 setTimeout(()=>{
 mole.classList.remove("up")
-},800)
+},moleTime)
 
 }
 
 function startGame(){
 
+setDifficulty()
+
 score=0
 time=30
+
 scoreText.textContent=score
 timeText.textContent=time
 
 createBoard()
+
+clearInterval(timer)
 
 timer=setInterval(()=>{
 
@@ -180,10 +222,10 @@ showMole()
 
 if(time<=0){
 clearInterval(timer)
-alert("ゲーム終了！スコア:"+score)
+alert("ゲーム終了！ スコア:"+score)
 }
 
-},700)
+},spawnSpeed)
 
 }
 
