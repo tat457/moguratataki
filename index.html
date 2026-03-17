@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>モグラ叩きULTIMATE</title>
+
+<style>
+
+body{
+margin:0;
+font-family:sans-serif;
+background:#87CEEB;
+text-align:center;
+}
+
+h1{
+margin:10px;
+}
+
+#ui{
+font-size:18px;
+margin-bottom:10px;
+}
+
+#game{
+
+width:95vw;
+max-width:520px;
+
+margin:auto;
+
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:12px;
+
+}
+
+.hole{
+
+width:100%;
+aspect-ratio:1;
+
+background:#5a3b1a;
+border-radius:50%;
+
+position:relative;
+overflow:hidden;
+
+}
+
+.mole{
+
+width:70%;
+height:70%;
+
+border-radius:50%;
+
+position:absolute;
+bottom:-80%;
+left:15%;
+
+transition:0.2s;
+
+}
+
+.normal{
+background:brown;
+}
+
+.bomb{
+background:black;
+}
+
+.mole.up{
+bottom:10%;
+}
+
+button{
+font-size:18px;
+padding:10px 25px;
+margin-top:10px;
+}
+
+#combo{
+color:red;
+font-weight:bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>モグラ叩き ULTIMATE</h1>
+
+<div id="ui">
+スコア: <span id="score">0</span>　
+レベル: <span id="level">1</span>　
+コンボ: <span id="combo">0</span>　
+残り: <span id="time">30</span>
+</div>
+
+<div id="game"></div>
+
+<button onclick="startGame()">スタート</button>
+
+<script>
+
+const game = document.getElementById("game")
+
+const scoreEl = document.getElementById("score")
+const levelEl = document.getElementById("level")
+const comboEl = document.getElementById("combo")
+const timeEl = document.getElementById("time")
+
+let score=0
+let level=1
+let combo=0
+let speed=900
+let time=30
+
+let timer
+let moleTimer
+
+let moles=[]
+
+const hitSound = new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg")
+const bombSound = new Audio("https://actions.google.com/sounds/v1/explosions/explosion.ogg")
+
+// 穴作成
+
+for(let i=0;i<9;i++){
+
+let hole=document.createElement("div")
+hole.className="hole"
+
+let mole=document.createElement("div")
+mole.className="mole normal"
+
+hole.appendChild(mole)
+
+game.appendChild(hole)
+
+moles.push(mole)
+
+mole.addEventListener("click",hit)
+
+}
+
+// ゲーム開始
+
+function startGame(){
+
+score=0
+level=1
+combo=0
+speed=900
+time=30
+
+scoreEl.textContent=score
+levelEl.textContent=level
+comboEl.textContent=combo
+timeEl.textContent=time
+
+timer=setInterval(()=>{
+
+time--
+timeEl.textContent=time
+
+if(time<=0) endGame()
+
+},1000)
+
+moleTimer=setInterval(showMole,speed)
+
+}
+
+// モグラ表示
+
+function showMole(){
+
+moles.forEach(m=>{
+
+m.classList.remove("up")
+m.classList.remove("bomb")
+m.classList.add("normal")
+
+})
+
+let index=Math.floor(Math.random()*moles.length)
+
+let mole=moles[index]
+
+// 爆弾確率
+
+if(Math.random()<0.2){
+
+mole.classList.remove("normal")
+mole.classList.add("bomb")
+
+}
+
+mole.classList.add("up")
+
+setTimeout(()=>{
+
+if(mole.classList.contains("up")){
+
+combo=0
+comboEl.textContent=combo
+
+}
+
+mole.classList.remove("up")
+
+},speed-200)
+
+}
+
+// 叩く
+
+function hit(e){
+
+let mole=e.target
+
+if(!mole.classList.contains("up")) return
+
+navigator.vibrate?.(30)
+
+if(mole.classList.contains("bomb")){
+
+bombSound.play()
+
+score-=5
+combo=0
+
+}else{
+
+hitSound.currentTime=0
+hitSound.play()
+
+combo++
+
+score+=1+Math.floor(combo/5)
+
+}
+
+scoreEl.textContent=score
+comboEl.textContent=combo
+
+mole.classList.remove("up")
+
+// レベルアップ
+
+if(score>level*15){
+
+level++
+speed*=0.85
+
+levelEl.textContent=level
+
+clearInterval(moleTimer)
+moleTimer=setInterval(showMole,speed)
+
+}
+
+}
+
+// 終了
+
+function endGame(){
+
+clearInterval(timer)
+clearInterval(moleTimer)
+
+alert("ゲーム終了！ スコア:"+score)
+
+}
+
+</script>
+
+</body>
+</html>
