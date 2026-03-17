@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>モグラ叩きULTIMATE</title>
+<title>モグラ叩き ULTIMATE</title>
 
 <style>
 
@@ -24,55 +24,85 @@ margin-bottom:10px;
 }
 
 #game{
-
 width:95vw;
 max-width:520px;
-
 margin:auto;
-
 display:grid;
 grid-template-columns:repeat(3,1fr);
 gap:12px;
-
 }
 
 .hole{
-
 width:100%;
 aspect-ratio:1;
-
 background:#5a3b1a;
 border-radius:50%;
-
 position:relative;
 overflow:hidden;
-
 }
+
+/* モグラ */
 
 .mole{
-
+position:absolute;
 width:70%;
 height:70%;
-
-border-radius:50%;
-
-position:absolute;
-bottom:-80%;
 left:15%;
-
-transition:0.2s;
-
-}
-
-.normal{
-background:brown;
-}
-
-.bomb{
-background:black;
+bottom:-80%;
+transition:0.18s;
+cursor:pointer;
 }
 
 .mole.up{
+bottom:10%;
+}
+
+/* モグラの見た目 */
+
+.body{
+width:100%;
+height:70%;
+background:#7a4b2a;
+border-radius:50%;
+position:absolute;
+bottom:0;
+}
+
+.eye{
+width:10%;
+height:10%;
+background:white;
+border-radius:50%;
+position:absolute;
+top:20%;
+}
+
+.eye.left{ left:25% }
+.eye.right{ right:25% }
+
+.pupil{
+width:50%;
+height:50%;
+background:black;
+border-radius:50%;
+margin:auto;
+margin-top:25%;
+}
+
+/* 爆弾 */
+
+.bomb{
+background:black;
+border-radius:50%;
+width:70%;
+height:70%;
+position:absolute;
+left:15%;
+bottom:-80%;
+transition:0.18s;
+}
+
+.bomb.up{
 bottom:10%;
 }
 
@@ -107,12 +137,12 @@ font-weight:bold;
 
 <script>
 
-const game = document.getElementById("game")
+const game=document.getElementById("game")
 
-const scoreEl = document.getElementById("score")
-const levelEl = document.getElementById("level")
-const comboEl = document.getElementById("combo")
-const timeEl = document.getElementById("time")
+const scoreEl=document.getElementById("score")
+const levelEl=document.getElementById("level")
+const comboEl=document.getElementById("combo")
+const timeEl=document.getElementById("time")
 
 let score=0
 let level=1
@@ -123,32 +153,44 @@ let time=30
 let timer
 let moleTimer
 
-let moles=[]
+let objects=[]
 
-const hitSound = new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg")
-const bombSound = new Audio("https://actions.google.com/sounds/v1/explosions/explosion.ogg")
+/* 音 */
 
-// 穴作成
+const hitSound=new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg")
+const bombSound=new Audio("https://actions.google.com/sounds/v1/explosions/explosion.ogg")
+
+function playSound(sound){
+let s=sound.cloneNode()
+s.play()
+}
+
+/* 穴作成 */
 
 for(let i=0;i<9;i++){
 
 let hole=document.createElement("div")
 hole.className="hole"
 
-let mole=document.createElement("div")
-mole.className="mole normal"
+let obj=document.createElement("div")
+obj.className="mole"
 
-hole.appendChild(mole)
+obj.innerHTML=`
+<div class="body"></div>
+<div class="eye left"><div class="pupil"></div></div>
+<div class="eye right"><div class="pupil"></div></div>
+`
 
+hole.appendChild(obj)
 game.appendChild(hole)
 
-moles.push(mole)
+objects.push(obj)
 
-mole.addEventListener("click",hit)
+obj.addEventListener("click",hit)
 
 }
 
-// ゲーム開始
+/* ゲーム開始 */
 
 function startGame(){
 
@@ -172,73 +214,68 @@ if(time<=0) endGame()
 
 },1000)
 
+clearInterval(moleTimer)
 moleTimer=setInterval(showMole,speed)
 
 }
 
-// モグラ表示
+/* モグラ表示 */
 
 function showMole(){
 
-moles.forEach(m=>{
-
-m.classList.remove("up")
-m.classList.remove("bomb")
-m.classList.add("normal")
-
+objects.forEach(o=>{
+o.classList.remove("up")
+o.dataset.type="mole"
 })
 
-let index=Math.floor(Math.random()*moles.length)
-
-let mole=moles[index]
-
-// 爆弾確率
+let index=Math.floor(Math.random()*objects.length)
+let obj=objects[index]
 
 if(Math.random()<0.2){
 
-mole.classList.remove("normal")
-mole.classList.add("bomb")
+obj.dataset.type="bomb"
+obj.innerHTML="💣"
+
+}else{
+
+obj.dataset.type="mole"
+
+obj.innerHTML=`
+<div class="body"></div>
+<div class="eye left"><div class="pupil"></div></div>
+<div class="eye right"><div class="pupil"></div></div>
+`
 
 }
 
-mole.classList.add("up")
+obj.classList.add("up")
 
 setTimeout(()=>{
-
-if(mole.classList.contains("up")){
-
-combo=0
-comboEl.textContent=combo
-
-}
-
-mole.classList.remove("up")
-
+obj.classList.remove("up")
 },speed-200)
 
 }
 
-// 叩く
+/* 叩く */
 
 function hit(e){
 
-let mole=e.target
+let obj=e.currentTarget
 
-if(!mole.classList.contains("up")) return
+if(!obj.classList.contains("up")) return
 
 navigator.vibrate?.(30)
 
-if(mole.classList.contains("bomb")){
+if(obj.dataset.type==="bomb"){
 
-bombSound.play()
+playSound(bombSound)
 
 score-=5
 combo=0
 
 }else{
 
-hitSound.currentTime=0
-hitSound.play()
+playSound(hitSound)
 
 combo++
 
@@ -249,9 +286,7 @@ score+=1+Math.floor(combo/5)
 scoreEl.textContent=score
 comboEl.textContent=combo
 
-mole.classList.remove("up")
-
-// レベルアップ
+obj.classList.remove("up")
 
 if(score>level*15){
 
@@ -267,7 +302,7 @@ moleTimer=setInterval(showMole,speed)
 
 }
 
-// 終了
+/* 終了 */
 
 function endGame(){
 
