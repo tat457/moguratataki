@@ -3,24 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>モグラ叩き ULTIMATE</title>
+<title>スーパー モグラ叩き</title>
 
 <style>
 
 body{
 margin:0;
 font-family:sans-serif;
-background:#87CEEB;
+background:linear-gradient(#87CEEB,#bfe9ff);
 text-align:center;
+overflow:hidden;
 }
 
 h1{
 margin:10px;
 }
 
-#ui{
-font-size:18px;
-margin-bottom:10px;
+#titleScreen{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:#87ceeb;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+}
+
+#gameScreen{
+display:none;
 }
 
 #game{
@@ -41,23 +54,19 @@ position:relative;
 overflow:hidden;
 }
 
-/* モグラ */
-
 .mole{
 position:absolute;
 width:70%;
 height:70%;
 left:15%;
 bottom:-80%;
-transition:0.18s;
+transition:0.15s;
 cursor:pointer;
 }
 
 .mole.up{
 bottom:10%;
 }
-
-/* モグラの見た目 */
 
 .body{
 width:100%;
@@ -69,52 +78,58 @@ bottom:0;
 }
 
 .eye{
-width:10%;
-height:10%;
+width:12%;
+height:12%;
 background:white;
 border-radius:50%;
 position:absolute;
 top:20%;
 }
 
-.eye.left{ left:25% }
-.eye.right{ right:25% }
+.eye.left{left:25%}
+.eye.right{right:25%}
 
 .pupil{
-width:50%;
-height:50%;
+width:60%;
+height:60%;
 background:black;
 border-radius:50%;
 margin:auto;
-margin-top:25%;
+margin-top:20%;
 }
 
-/* 爆弾 */
+.gold .body{
+background:gold;
+}
 
 .bomb{
-background:black;
-border-radius:50%;
-width:70%;
-height:70%;
-position:absolute;
-left:15%;
-bottom:-80%;
-transition:0.18s;
+font-size:40px;
+text-align:center;
+line-height:80px;
 }
 
-.bomb.up{
-bottom:10%;
+#ui{
+font-size:18px;
+margin-bottom:10px;
 }
 
 button{
-font-size:18px;
-padding:10px 25px;
-margin-top:10px;
+font-size:20px;
+padding:12px 25px;
 }
 
-#combo{
-color:red;
-font-weight:bold;
+#gameOver{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.8);
+color:white;
+display:none;
+justify-content:center;
+align-items:center;
+flex-direction:column;
 }
 
 </style>
@@ -122,7 +137,14 @@ font-weight:bold;
 
 <body>
 
-<h1>モグラ叩き ULTIMATE</h1>
+<div id="titleScreen">
+<h1>スーパー モグラ叩き</h1>
+<button onclick="startGame()">ゲーム開始</button>
+</div>
+
+<div id="gameScreen">
+
+<h1>モグラ叩き</h1>
 
 <div id="ui">
 スコア: <span id="score">0</span>　
@@ -133,7 +155,13 @@ font-weight:bold;
 
 <div id="game"></div>
 
-<button onclick="startGame()">スタート</button>
+</div>
+
+<div id="gameOver">
+<h1>ゲーム終了</h1>
+<h2 id="finalScore"></h2>
+<button onclick="location.reload()">もう一度</button>
+</div>
 
 <script>
 
@@ -144,66 +172,60 @@ const levelEl=document.getElementById("level")
 const comboEl=document.getElementById("combo")
 const timeEl=document.getElementById("time")
 
+const titleScreen=document.getElementById("titleScreen")
+const gameScreen=document.getElementById("gameScreen")
+const gameOverScreen=document.getElementById("gameOver")
+const finalScore=document.getElementById("finalScore")
+
 let score=0
-let level=1
 let combo=0
-let speed=900
+let level=1
 let time=30
+let speed=900
 
 let timer
 let moleTimer
 
 let objects=[]
 
-/* 音 */
-
 const hitSound=new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg")
 const bombSound=new Audio("https://actions.google.com/sounds/v1/explosions/explosion.ogg")
+const goldSound=new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg")
 
 function playSound(sound){
 let s=sound.cloneNode()
 s.play()
 }
 
-/* 穴作成 */
-
 for(let i=0;i<9;i++){
 
 let hole=document.createElement("div")
 hole.className="hole"
 
-let obj=document.createElement("div")
-obj.className="mole"
+let mole=document.createElement("div")
+mole.className="mole"
 
-obj.innerHTML=`
-<div class="body"></div>
-<div class="eye left"><div class="pupil"></div></div>
-<div class="eye right"><div class="pupil"></div></div>
-`
-
-hole.appendChild(obj)
+hole.appendChild(mole)
 game.appendChild(hole)
 
-objects.push(obj)
+objects.push(mole)
 
-obj.addEventListener("click",hit)
+mole.addEventListener("click",hit)
 
 }
 
-/* ゲーム開始 */
-
 function startGame(){
 
-score=0
-level=1
-combo=0
-speed=900
-time=30
+titleScreen.style.display="none"
+gameScreen.style.display="block"
 
-scoreEl.textContent=score
-levelEl.textContent=level
-comboEl.textContent=combo
-timeEl.textContent=time
+score=0
+combo=0
+level=1
+time=30
+speed=900
+
+updateUI()
 
 timer=setInterval(()=>{
 
@@ -214,34 +236,50 @@ if(time<=0) endGame()
 
 },1000)
 
-clearInterval(moleTimer)
 moleTimer=setInterval(showMole,speed)
 
 }
 
-/* モグラ表示 */
+function updateUI(){
+
+scoreEl.textContent=score
+comboEl.textContent=combo
+levelEl.textContent=level
+timeEl.textContent=time
+
+}
 
 function showMole(){
 
 objects.forEach(o=>{
 o.classList.remove("up")
-o.dataset.type="mole"
 })
 
 let index=Math.floor(Math.random()*objects.length)
 let obj=objects[index]
 
-if(Math.random()<0.2){
+let type="normal"
 
-obj.dataset.type="bomb"
+let r=Math.random()
+
+if(r<0.15) type="bomb"
+else if(r<0.30) type="gold"
+
+obj.dataset.type=type
+
+if(type==="bomb"){
+
 obj.innerHTML="💣"
+obj.className="mole bomb"
 
 }else{
 
-obj.dataset.type="mole"
+obj.className="mole"
+
+let goldClass=type==="gold"?"gold":""
 
 obj.innerHTML=`
-<div class="body"></div>
+<div class="body ${goldClass}"></div>
 <div class="eye left"><div class="pupil"></div></div>
 <div class="eye right"><div class="pupil"></div></div>
 `
@@ -251,12 +289,17 @@ obj.innerHTML=`
 obj.classList.add("up")
 
 setTimeout(()=>{
+
+if(obj.classList.contains("up")){
+combo=0
+comboEl.textContent=combo
+}
+
 obj.classList.remove("up")
+
 },speed-200)
 
 }
-
-/* 叩く */
 
 function hit(e){
 
@@ -266,50 +309,57 @@ if(!obj.classList.contains("up")) return
 
 navigator.vibrate?.(30)
 
-if(obj.dataset.type==="bomb"){
+let type=obj.dataset.type
+
+if(type==="bomb"){
 
 playSound(bombSound)
 
 score-=5
 combo=0
 
+}else if(type==="gold"){
+
+playSound(goldSound)
+
+combo++
+score+=5+combo
+
 }else{
 
 playSound(hitSound)
 
 combo++
-
 score+=1+Math.floor(combo/5)
 
 }
 
-scoreEl.textContent=score
-comboEl.textContent=combo
-
 obj.classList.remove("up")
 
-if(score>level*15){
+updateUI()
+
+if(score>level*20){
 
 level++
 speed*=0.85
 
-levelEl.textContent=level
-
 clearInterval(moleTimer)
 moleTimer=setInterval(showMole,speed)
 
-}
+updateUI()
 
 }
 
-/* 終了 */
+}
 
 function endGame(){
 
 clearInterval(timer)
 clearInterval(moleTimer)
 
-alert("ゲーム終了！ スコア:"+score)
+finalScore.textContent="スコア: "+score
+
+gameOverScreen.style.display="flex"
 
 }
 
