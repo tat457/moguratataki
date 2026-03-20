@@ -40,23 +40,9 @@ transition:0.25s;
 user-select:none;
 }
 
-.mole.up{
-bottom:10px;
-}
+.mole.up{ bottom:10px; }
 
-.hit{
-transform:scale(0.8);
-}
-
-select{
-font-size:16px;
-padding:5px;
-}
-
-button{
-font-size:16px;
-padding:6px 12px;
-}
+.hit{ transform:scale(0.8); }
 
 </style>
 </head>
@@ -70,58 +56,30 @@ padding:6px 12px;
 
 <br><br>
 
-難易度:
-<select id="difficulty">
-<option value="easy">Easy</option>
-<option value="normal" selected>Normal</option>
-<option value="hard">Hard</option>
-</select>
-
 <button onclick="startGame()">スタート</button>
+<button onclick="toggleBGM()">BGM ON/OFF</button>
 
 <br><br>
 
 <div id="game"></div>
+
+<!-- BGM -->
+<audio id="bgm" loop>
+<source src="モグラ叩きラッシュ！.mp3">
+</audio>
 
 <script>
 
 const game = document.getElementById("game")
 const scoreText = document.getElementById("score")
 const timeText = document.getElementById("time")
-const difficultySelect = document.getElementById("difficulty")
+const bgm = document.getElementById("bgm")
 
 let score=0
 let time=30
 let timer
 let moles=[]
-
-let spawnSpeed=700
-let moleTime=800
-let bombRate=0.2
-
-function setDifficulty(){
-
-const diff=difficultySelect.value
-
-if(diff==="easy"){
-spawnSpeed=900
-moleTime=900
-bombRate=0.1
-}
-
-if(diff==="normal"){
-spawnSpeed=700
-moleTime=800
-bombRate=0.2
-}
-
-if(diff==="hard"){
-spawnSpeed=450
-moleTime=600
-bombRate=0.35
-}
-
-}
+let bgmPlaying=false
 
 function createBoard(){
 
@@ -179,33 +137,32 @@ const mole=moles[index]
 
 if(mole.classList.contains("up")) return
 
-if(Math.random()<bombRate){
-
+if(Math.random()<0.2){
 mole.textContent="💣"
 mole.dataset.type="bomb"
-
 }else{
-
 mole.textContent="🐹"
 mole.dataset.type="mole"
-
 }
 
 mole.classList.add("up")
 
 setTimeout(()=>{
 mole.classList.remove("up")
-},moleTime)
+},800)
 
 }
 
 function startGame(){
 
-setDifficulty()
+// iPhone対策：ここでBGM再生
+if(!bgmPlaying){
+bgm.play()
+bgmPlaying=true
+}
 
 score=0
 time=30
-
 scoreText.textContent=score
 timeText.textContent=time
 
@@ -222,10 +179,22 @@ showMole()
 
 if(time<=0){
 clearInterval(timer)
+bgm.pause()
+bgm.currentTime=0
 alert("ゲーム終了！ スコア:"+score)
 }
 
-},spawnSpeed)
+},700)
+
+}
+
+function toggleBGM(){
+
+if(bgm.paused){
+bgm.play()
+}else{
+bgm.pause()
+}
 
 }
 
