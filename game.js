@@ -99,25 +99,38 @@ mole.classList.remove("up")
 
 function startGame(){
 
-score = 0
-time = 30
-scoreDisplay.textContent = score
-timeDisplay.textContent = time
-gameRunning = true
+score=0
+time=30
+
+scoreText.textContent=score
+timeText.textContent=time
 
 createBoard()
 
-timer = setInterval(()=>{
+// ★ここが重要
+bgm.currentTime = 0
+bgm.volume = 0.5
+
+bgm.play().then(()=>{
+bgmPlaying = true
+}).catch(()=>{
+console.log("再生ブロックされた")
+})
+
+clearInterval(timer)
+
+timer=setInterval(()=>{
 
 time--
-timeDisplay.textContent = time
+timeText.textContent=time
 
 showMole()
 
-if(time <= 0){
+if(time<=0){
 clearInterval(timer)
-gameRunning = false
-alert("ゲーム終了！ スコア: "+score)
+bgm.pause()
+bgm.currentTime=0
+alert("ゲーム終了！ スコア:"+score)
 }
 
 },700)
