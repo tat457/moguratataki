@@ -1,7 +1,10 @@
 const game = document.getElementById("game")
 const scoreText = document.getElementById("score")
 const timeText = document.getElementById("time")
-const bgm = document.getElementById("mogurabgm")
+const bgm = document.getElementById("bgm")
+
+const startBtn = document.getElementById("startBtn")
+const bgmBtn = document.getElementById("bgmBtn")
 
 let score = 0
 let time = 30
@@ -9,6 +12,7 @@ let timer
 let moles = []
 let gameRunning = false
 
+// ボード作成
 function createBoard(){
 
 game.innerHTML=""
@@ -59,6 +63,7 @@ moles.push(mole)
 
 }
 
+// モグラ出現
 function showMole(){
 
 const index=Math.floor(Math.random()*moles.length)
@@ -82,9 +87,10 @@ mole.classList.remove("up")
 
 }
 
+// ゲーム開始
 function startGame(){
 
-gameRunning = true   // ★これ重要
+gameRunning = true
 
 score=0
 time=30
@@ -94,12 +100,12 @@ timeText.textContent=time
 
 createBoard()
 
-// ★BGM（確実に鳴る）
+// ★BGM（スマホ対応）
 bgm.currentTime = 0
 bgm.volume = 0.5
 
 bgm.play().catch(()=>{
-console.log("BGMブロック")
+console.log("BGM再生ブロック")
 })
 
 clearInterval(timer)
@@ -123,4 +129,20 @@ alert("ゲーム終了！ スコア:"+score)
 
 }
 
+// BGM切り替え
+function toggleBGM(){
+
+if(bgm.paused){
+bgm.play()
+}else{
+bgm.pause()
+}
+
+}
+
+// イベント登録
+startBtn.addEventListener("click", startGame)
+bgmBtn.addEventListener("click", toggleBGM)
+
+// 初期化
 createBoard()
