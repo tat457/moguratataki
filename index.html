@@ -4,203 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>モグラ叩き</title>
-
-<style>
-
-body{
-font-family:sans-serif;
-text-align:center;
-background:#bde0ff;
-}
-
-#game{
-width:330px;
-margin:auto;
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:10px;
-}
-
-.hole{
-width:100px;
-height:100px;
-background:#5a3a1b;
-border-radius:50%;
-position:relative;
-overflow:hidden;
-}
-
-.mole{
-position:absolute;
-bottom:-100px;
-width:100%;
-font-size:60px;
-cursor:pointer;
-transition:0.25s;
-user-select:none;
-}
-
-.mole.up{ bottom:10px; }
-
-.hit{ transform:scale(0.8); }
-
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
 <h1>モグラ叩き</h1>
 
+<div id="ui">
 スコア: <span id="score">0</span>
 時間: <span id="time">30</span>
-
 <br><br>
-
-<button onclick="startGame()">スタート</button>
-<button onclick="toggleBGM()">BGM ON/OFF</button>
-
-<br><br>
+<button id="startBtn">スタート</button>
+<button id="bgmBtn">BGM ON/OFF</button>
+</div>
 
 <div id="game"></div>
 
 <!-- BGM -->
-<audio id="mogurabgm" loop>
-<source src="mogurabgm.mp3">
-</audio>
+<audio id="bgm" src="mogurabgm.mp3" loop></audio>
 
-<script>
-
-const game = document.getElementById("game")
-const scoreText = document.getElementById("score")
-const timeText = document.getElementById("time")
-const bgm = document.getElementById("mogurabgm")
-
-let score=0
-let time=30
-let timer
-let moles=[]
-let bgmPlaying=false
-
-function createBoard(){
-
-game.innerHTML=""
-moles=[]
-
-for(let i=0;i<9;i++){
-
-const hole=document.createElement("div")
-hole.className="hole"
-
-const mole=document.createElement("div")
-mole.className="mole"
-
-hole.appendChild(mole)
-game.appendChild(hole)
-
-let hit=false
-
-mole.addEventListener("pointerdown",()=>{
-
-if(!mole.classList.contains("up")) return
-if(hit) return
-
-hit=true
-
-mole.classList.remove("up")
-mole.classList.add("hit")
-
-if(mole.dataset.type==="bomb"){
-score-=5
-}else{
-score+=1
-}
-
-scoreText.textContent=score
-
-setTimeout(()=>{
-mole.classList.remove("hit")
-hit=false
-},200)
-
-})
-
-moles.push(mole)
-
-}
-
-}
-
-function showMole(){
-
-const index=Math.floor(Math.random()*moles.length)
-const mole=moles[index]
-
-if(mole.classList.contains("up")) return
-
-if(Math.random()<0.2){
-mole.textContent="💣"
-mole.dataset.type="bomb"
-}else{
-mole.textContent="🐹"
-mole.dataset.type="mole"
-}
-
-mole.classList.add("up")
-
-setTimeout(()=>{
-mole.classList.remove("up")
-},800)
-
-}
-
-function startGame(){
-
-// iPhone対策：ここでBGM再生
-if(!bgmPlaying){
-bgm.play()
-bgmPlaying=true
-}
-
-score=0
-time=30
-scoreText.textContent=score
-timeText.textContent=time
-
-createBoard()
-
-clearInterval(timer)
-
-timer=setInterval(()=>{
-
-time--
-timeText.textContent=time
-
-showMole()
-
-if(time<=0){
-clearInterval(timer)
-bgm.pause()
-bgm.currentTime=0
-alert("ゲーム終了！ スコア:"+score)
-}
-
-},700)
-
-}
-
-function toggleBGM(){
-
-if(bgm.paused){
-bgm.play()
-}else{
-bgm.pause()
-}
-
-}
-
-createBoard()
-
-</script>
+<script src="game.js"></script>
 
 </body>
 </html>
