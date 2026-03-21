@@ -5,6 +5,7 @@ const bgm = document.getElementById("bgm")
 
 const startBtn = document.getElementById("startBtn")
 const bgmBtn = document.getElementById("bgmBtn")
+const difficultySelect = document.getElementById("difficulty")
 
 let score = 0
 let time = 30
@@ -12,7 +13,36 @@ let timer
 let moles = []
 let gameRunning = false
 
-// ボード作成
+// 難易度設定
+let spawnSpeed = 700
+let moleTime = 800
+let bombRate = 0.2
+
+function setDifficulty(){
+
+const diff = difficultySelect.value
+
+if(diff === "easy"){
+spawnSpeed = 900
+moleTime = 1000
+bombRate = 0.1
+}
+
+if(diff === "normal"){
+spawnSpeed = 700
+moleTime = 800
+bombRate = 0.2
+}
+
+if(diff === "hard"){
+spawnSpeed = 450
+moleTime = 600
+bombRate = 0.35
+}
+
+}
+
+// ボード生成
 function createBoard(){
 
 game.innerHTML=""
@@ -71,7 +101,7 @@ const mole=moles[index]
 
 if(mole.classList.contains("up")) return
 
-if(Math.random()<0.2){
+if(Math.random() < bombRate){
 mole.textContent="💣"
 mole.dataset.type="bomb"
 }else{
@@ -83,7 +113,7 @@ mole.classList.add("up")
 
 setTimeout(()=>{
 mole.classList.remove("up")
-},800)
+},moleTime)
 
 }
 
@@ -91,6 +121,7 @@ mole.classList.remove("up")
 function startGame(){
 
 gameRunning = true
+setDifficulty()
 
 score=0
 time=30
@@ -100,13 +131,10 @@ timeText.textContent=time
 
 createBoard()
 
-// ★BGM（スマホ対応）
+// BGM（スマホ対応）
 bgm.currentTime = 0
 bgm.volume = 0.5
-
-bgm.play().catch(()=>{
-console.log("BGM再生ブロック")
-})
+bgm.play().catch(()=>{})
 
 clearInterval(timer)
 
@@ -125,15 +153,15 @@ bgm.currentTime=0
 alert("ゲーム終了！ スコア:"+score)
 }
 
-},700)
+},spawnSpeed)
 
 }
 
-// BGM切り替え
+// BGM切替
 function toggleBGM(){
 
 if(bgm.paused){
-bgm.play()
+bgm.play().catch(()=>{})
 }else{
 bgm.pause()
 }
