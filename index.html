@@ -1,43 +1,631 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>モグラ叩き</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ぷにぷに！もぐらたたき</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: もちポップOne & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Mochiy Pop One', 'Inter', sans-serif;
+    }
+    /* 草原の背景アニメーション */
+    .bg-grass {
+      background: linear-gradient(180deg, #cbe6ff 0%, #e2f1ff 40%, #a3e2a3 70%, #87d387 100%);
+      overflow-x: hidden;
+    }
+    /* 雲のふわふわアニメーション */
+    @keyframes floatCloud {
+      0% { transform: translateX(-10%); }
+      50% { transform: translateX(10%); }
+      100% { transform: translateX(-10%); }
+    }
+    .cloud-anim {
+      animation: floatCloud 20s ease-in-out infinite;
+    }
+    /* もぐらの飛び出すアニメーション */
+    .mole-container {
+      perspective: 1000px;
+    }
+    .mole-sprite {
+      transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.15s;
+      transform: translateY(110%) scale(0.7);
+      opacity: 0;
+    }
+    .mole-sprite.up {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+    .mole-sprite.hit {
+      transform: scale(0.8) rotate(15deg);
+      filter: brightness(1.2);
+    }
+    /* ぷにぷにボタンアニメーション */
+    .btn-punipuni {
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 6px 0 #d97706;
+    }
+    .btn-punipuni:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #d97706;
+    }
+    .btn-green {
+      box-shadow: 0 6px 0 #15803d;
+    }
+    .btn-green:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #15803d;
+    }
+    /* ポップアップテキスト（叩いた時の +10 などのエフェクト） */
+    .pop-text {
+      animation: floatUp 0.6s ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(0.5); opacity: 0; }
+      20% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+      100% { transform: translateY(-50px) scale(1); opacity: 0; }
+    }
+  </style>
 </head>
+<body class="bg-grass min-h-screen flex flex-col justify-between text-slate-800 select-none relative pb-8">
 
-<body>
+  <!-- 背景の可愛いふわふわ雲 -->
+  <div class="absolute top-10 left-[10%] w-24 h-12 bg-white/80 rounded-full blur-[1px] cloud-anim hidden md:block"></div>
+  <div class="absolute top-20 right-[15%] w-36 h-16 bg-white/80 rounded-full blur-[1px] cloud-anim hidden md:block" style="animation-delay: -5s;"></div>
 
-<h1>モグラ叩き</h1>
+  <header class="text-center pt-6 px-4 z-10">
+    <h1 class="text-3xl md:text-5xl font-bold text-amber-800 drop-shadow-[0_4px_0_rgba(255,255,255,0.8)] tracking-wider flex items-center justify-center gap-2">
+      <span>🐹</span> ぷにぷに！もぐらたたき <span>🔨</span>
+    </h1>
+    <p class="text-xs md:text-sm text-amber-950 font-bold mt-1 bg-white/40 px-3 py-1 rounded-full inline-block">
+      もぐらを叩いてポイントをゲット！爆弾には気をつけてね！
+    </p>
+  </header>
 
-<div id="ui">
-スコア: <span id="score">0</span>
-時間: <span id="time">30</span>
+  <main class="flex-grow flex flex-col items-center justify-center px-4 py-4 z-10 w-full max-w-lg mx-auto">
+    
+    <!-- ステータスボード -->
+    <div class="grid grid-cols-2 gap-4 w-full mb-4">
+      <!-- スコアカード -->
+      <div class="bg-amber-100 border-4 border-amber-600 rounded-2xl p-3 text-center shadow-md relative overflow-hidden">
+        <div class="absolute -top-3 -left-3 text-2xl opacity-20">⭐</div>
+        <div class="text-xs text-amber-800 font-bold uppercase tracking-wide">スコア</div>
+        <div id="score" class="text-3xl md:text-4xl font-extrabold text-amber-700">0</div>
+      </div>
+      <!-- タイムカード -->
+      <div class="bg-rose-100 border-4 border-rose-500 rounded-2xl p-3 text-center shadow-md relative overflow-hidden">
+        <div class="absolute -top-3 -right-3 text-2xl opacity-20">⏰</div>
+        <div class="text-xs text-rose-800 font-bold uppercase tracking-wide">のこり時間</div>
+        <div id="time" class="text-3xl md:text-4xl font-extrabold text-rose-600">30</div>
+      </div>
+    </div>
 
-<br><br>
+    <!-- 設定・コントロールエリア -->
+    <div class="bg-white/80 backdrop-blur-sm border-4 border-amber-500/50 rounded-2xl p-4 w-full mb-6 shadow-lg flex flex-wrap items-center justify-between gap-3">
+      <!-- 難易度 -->
+      <div class="flex items-center gap-2">
+        <label for="difficulty" class="text-sm font-bold text-amber-900">むずかしさ:</label>
+        <select id="difficulty" class="bg-amber-50 border-2 border-amber-300 rounded-lg px-2 py-1 text-sm font-bold text-amber-800 focus:outline-none focus:border-amber-500">
+          <option value="easy">かんたん 🍃</option>
+          <option value="normal" selected>ふつう 🥕</option>
+          <option value="hard">むずかしい 🔥</option>
+        </select>
+      </div>
 
-難易度:
-<select id="difficulty">
-<option value="easy">Easy</option>
-<option value="normal" selected>Normal</option>
-<option value="hard">Hard</option>
-</select>
+      <!-- BGM切り替え -->
+      <button id="bgmBtn" class="flex items-center gap-1 bg-amber-500 hover:bg-amber-400 text-white font-bold py-1 px-3 rounded-full text-xs transition duration-200 shadow-sm border border-amber-600">
+        <span id="bgmIcon">🎵</span> <span id="bgmText">BGM: OFF</span>
+      </button>
+    </div>
 
-<br><br>
+    <!-- もぐらのフィールド -->
+    <div id="game" class="grid grid-cols-3 gap-3 md:gap-5 w-full bg-emerald-800/20 border-4 border-emerald-600/40 rounded-3xl p-4 md:p-6 shadow-inner relative">
+      <!-- JSで9つの穴がここに自動生成されます -->
+    </div>
 
-<button id="startBtn">スタート</button>
-<button id="bgmBtn">BGM ON/OFF</button>
-</div>
+    <div class="mt-6 w-full flex justify-center">
+      <button id="startBtn" class="btn-punipuni bg-amber-500 hover:bg-amber-400 text-white font-extrabold text-xl py-3 px-10 rounded-2xl w-full max-w-xs tracking-wider border-2 border-amber-600">
+        スタート！ 🚀
+      </button>
+    </div>
 
-<br>
+  </main>
 
-<div id="game"></div>
+  <!-- 可愛いリザルトモーダル -->
+  <div id="resultModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white border-8 border-amber-400 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl transform scale-90 transition-transform duration-300 relative">
+      <!-- クラッカー絵文字装飾 -->
+      <div class="absolute -top-10 -left-6 text-5xl rotate-[-15deg] animate-bounce">🎉</div>
+      <div class="absolute -top-10 -right-6 text-5xl rotate-[15deg] animate-bounce" style="animation-delay: 0.2s">✨</div>
+      
+      <h2 class="text-3xl font-extrabold text-amber-600 mb-2">おしまい！</h2>
+      <p class="text-sm text-slate-500 mb-4">よくがんばったね！</p>
+      
+      <!-- スコア表示盤 -->
+      <div class="bg-amber-50 border-4 border-dashed border-amber-300 rounded-2xl py-4 px-6 mb-6">
+        <div class="text-xs font-bold text-amber-700">あなたのスコア</div>
+        <div id="finalScore" class="text-5xl font-black text-amber-500 my-1">0</div>
+        <!-- 称号 -->
+        <div id="rankText" class="text-sm font-extrabold text-emerald-600 mt-1">👑 もぐら見習い</div>
+      </div>
 
-<!-- BGM -->
-<audio id="bgm" src="mogurabgm.mp3" loop></audio>
+      <!-- ボタン群 -->
+      <div class="flex flex-col gap-2">
+        <button id="restartBtn" class="btn-punipuni btn-green bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold py-3 px-6 rounded-xl border-2 border-emerald-600">
+          もういっかい遊ぶ 🔁
+        </button>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 font-bold text-xs mt-2 py-1">
+          とじる
+        </button>
+      </div>
+    </div>
+  </div>
 
-<script src="game.js"></script>
+  <footer class="text-center text-xs text-amber-900/60 font-bold z-10 px-4 mt-4">
+    © 2026 ぷにぷに！もぐらたたき開発委員会
+  </footer>
 
+  <script>
+    // --- 音響システム（Web Audio API） ---
+    // 外部ファイル（mogurabgm.mp3）の代わりにブラウザ内部で可愛いファミコン風音源を生成します
+    class SoundSystem {
+      constructor() {
+        this.ctx = null;
+        this.bgmInterval = null;
+        this.isBgmPlaying = false;
+        this.bgmEnabled = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      }
+
+      // ピコッ！という可愛いヒット音
+      playHitSound() {
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
+        osc.type = 'triangle'; // 柔らかい丸みのある音
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(900, now + 0.15); // 音程が急上昇して「ピピッ」となる
+        
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+        
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+
+      // レアもぐらヒット時のキラキラ音
+      playRareHitSound() {
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+
+        const now = this.ctx.currentTime;
+        // 連続して高い音を鳴らす
+        [800, 1000, 1200, 1500].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.04);
+          gain.gain.setValueAtTime(0.08, now + idx * 0.04);
+          gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.04 + 0.1);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.04);
+          osc.stop(now + idx * 0.04 + 0.1);
+        });
+      }
+
+      // 爆発音（爆弾を叩いた時）
+      playExplosionSound() {
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.3);
+      }
+
+      // タイムアップのファンファーレ
+      playFanfare() {
+        this.init();
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+
+        const now = this.ctx.currentTime;
+        const notes = [261.63, 329.63, 392.00, 523.25]; // ド・ミ・ソ・ド
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+          gain.gain.setValueAtTime(0.1, now + idx * 0.1);
+          gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.1 + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.1);
+          osc.stop(now + idx * 0.1 + 0.3);
+        });
+      }
+
+      // 可愛いループBGMの演奏ロジック（ピコピコマーチ）
+      startBGM() {
+        this.init();
+        if (!this.bgmEnabled) return;
+        if (this.isBgmPlaying) return;
+        this.isBgmPlaying = true;
+
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+
+        // メロディの定義（ピコピコ風に4分音符・8分音符で演奏）
+        const melody = [
+          329.63, 349.23, 392.00, 392.00, 440.00, 392.00, 349.23, 329.63,
+          293.66, 329.63, 349.23, 349.23, 392.00, 349.23, 329.63, 293.66,
+          261.63, 329.63, 392.00, 523.25, 493.88, 440.00, 392.00, 349.23,
+          329.63, 293.66, 261.63, 261.63
+        ];
+        let noteIdx = 0;
+        const tempo = 180; // 音を鳴らす間隔 (ms)
+
+        this.bgmInterval = setInterval(() => {
+          if (!this.bgmEnabled) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'triangle'; // まろやかなピコピコ
+          osc.frequency.setValueAtTime(melody[noteIdx], now);
+          
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.linearRampToValueAtTime(0.001, now + 0.15);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.15);
+
+          noteIdx = (noteIdx + 1) % melody.length;
+        }, tempo);
+      }
+
+      stopBGM() {
+        if (this.bgmInterval) {
+          clearInterval(this.bgmInterval);
+          this.bgmInterval = null;
+        }
+        this.isBgmPlaying = false;
+      }
+    }
+
+    const sound = new SoundSystem();
+
+    // --- ゲーム設定と要素の取得 ---
+    const gameBoard = document.getElementById("game");
+    const scoreText = document.getElementById("score");
+    const timeText = document.getElementById("time");
+    
+    const startBtn = document.getElementById("startBtn");
+    const bgmBtn = document.getElementById("bgmBtn");
+    const bgmIcon = document.getElementById("bgmIcon");
+    const bgmText = document.getElementById("bgmText");
+    const difficultySelect = document.getElementById("difficulty");
+
+    // モーダル関連
+    const resultModal = document.getElementById("resultModal");
+    const finalScore = document.getElementById("finalScore");
+    const rankText = document.getElementById("rankText");
+    const restartBtn = document.getElementById("restartBtn");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+
+    let score = 0;
+    let time = 30;
+    let timer = null;
+    let moles = [];
+    let gameRunning = false;
+
+    // 難易度別の内部パラメータ
+    let spawnSpeed = 700;
+    let moleTime = 800;
+    let bombRate = 0.2;
+    let goldRate = 0.1; // レアもぐらの出現率
+
+    // 難易度設定の反映
+    function setDifficulty() {
+      const diff = difficultySelect.value;
+      if (diff === "easy") {
+        spawnSpeed = 950;
+        moleTime = 1100;
+        bombRate = 0.1;
+        goldRate = 0.15;
+      } else if (diff === "normal") {
+        spawnSpeed = 700;
+        moleTime = 850;
+        bombRate = 0.2;
+        goldRate = 0.1;
+      } else if (diff === "hard") {
+        spawnSpeed = 480;
+        moleTime = 650;
+        bombRate = 0.35;
+        goldRate = 0.08;
+      }
+    }
+
+    // ボードの生成
+    function createBoard() {
+      gameBoard.innerHTML = "";
+      moles = [];
+
+      for (let i = 0; i < 9; i++) {
+        // 穴のコンテナ（中を暗いブラウンに、外枠を立体感のあるクッキリした茶色に調整）
+        const holeContainer = document.createElement("div");
+        holeContainer.className = "relative aspect-square bg-[#3e220f] rounded-full shadow-[inset_0_8px_16px_rgba(0,0,0,0.75)] border-4 border-amber-800 flex items-center justify-center overflow-hidden mole-container";
+
+        // もぐらのスプライト（絵文字コンテナ）
+        const mole = document.createElement("div");
+        mole.className = "mole-sprite absolute bottom-0 text-5xl md:text-6xl cursor-pointer select-none pb-2 flex flex-col items-center justify-end h-full w-full";
+        mole.innerHTML = `
+          <span class="mole-emoji">🐹</span>
+        `;
+
+        // 穴の中にあった緑の草パーツは撤去し、もぐらが常に100%見やすくなるようにしました
+        holeContainer.appendChild(mole);
+        gameBoard.appendChild(holeContainer);
+
+        let hit = false;
+
+        // タップ/クリックイベント
+        mole.addEventListener("pointerdown", (e) => {
+          if (!gameRunning) return;
+          if (!mole.classList.contains("up")) return;
+          if (hit) return;
+
+          hit = true;
+          mole.classList.remove("up");
+          mole.classList.add("hit");
+
+          // エフェクトテキストの作成（ふわっと浮き出るスコア）
+          const effect = document.createElement("div");
+          effect.className = "absolute text-2xl font-black pop-text z-20 drop-shadow-[0_2px_0_white]";
+          
+          const type = mole.dataset.type;
+          if (type === "bomb") {
+            score = Math.max(0, score - 15); // 最低は0点
+            effect.innerText = "💥 -15";
+            effect.classList.add("text-rose-500");
+            sound.playExplosionSound();
+            
+            // 画面をすこし揺らす
+            gameBoard.classList.add("animate-bounce");
+            setTimeout(() => gameBoard.classList.remove("animate-bounce"), 300);
+
+          } else if (type === "gold") {
+            score += 30;
+            effect.innerText = "✨👑 +30";
+            effect.classList.add("text-amber-500");
+            sound.playRareHitSound();
+            
+            // キラキラ感を表現するため顔を変える
+            mole.querySelector(".mole-emoji").innerText = "🤩";
+          } else {
+            score += 10;
+            effect.innerText = "🥕 +10";
+            effect.classList.add("text-emerald-500");
+            sound.playHitSound();
+            
+            // 気絶した顔に変える
+            mole.querySelector(".mole-emoji").innerText = "😵";
+          }
+
+          scoreText.textContent = score;
+
+          // 穴の中心付近にスコアエフェクトを配置
+          const rect = mole.getBoundingClientRect();
+          const boardRect = gameBoard.getBoundingClientRect();
+          effect.style.left = `${rect.left - boardRect.left + rect.width / 4}px`;
+          effect.style.top = `${rect.top - boardRect.top + rect.height / 3}px`;
+          gameBoard.appendChild(effect);
+
+          // 一定時間後にリセット
+          setTimeout(() => {
+            mole.classList.remove("hit");
+            hit = false;
+            // エフェクトの削除
+            effect.remove();
+          }, 350);
+        });
+
+        moles.push(mole);
+      }
+    }
+
+    function showMole() {
+      if (!gameRunning) return;
+
+      const index = Math.floor(Math.random() * moles.length);
+      const mole = moles[index];
+
+      if (mole.classList.contains("up")) return;
+
+      const rand = Math.random();
+      const emojiSpan = mole.querySelector(".mole-emoji");
+
+      if (rand < bombRate) {
+        // 爆弾くん
+        emojiSpan.innerText = "💣";
+        mole.dataset.type = "bomb";
+      } else if (rand < bombRate + goldRate) {
+        // レア金のモグラ
+        emojiSpan.innerText = "👑";
+        mole.dataset.type = "gold";
+      } else {
+        // 通常の可愛いもぐら
+        const moleFaces = ["🐹", "🐹", "🐰", "🦊"]; // たまにうさぎやきつねも出現
+        emojiSpan.innerText = moleFaces[Math.floor(Math.random() * moleFaces.length)];
+        mole.dataset.type = "mole";
+      }
+
+      mole.classList.add("up");
+
+      // 一定時間で引っ込む（難易度で調整）
+      setTimeout(() => {
+        mole.classList.remove("up");
+      }, moleTime);
+    }
+
+    // ゲームの開始
+    function startGame() {
+      sound.init();
+      setDifficulty();
+
+      score = 0;
+      time = 30;
+
+      scoreText.textContent = score;
+      timeText.textContent = time;
+
+      createBoard();
+      gameRunning = true;
+      startBtn.disabled = true;
+      startBtn.classList.add("opacity-50", "cursor-not-allowed");
+
+      // BGM開始
+      sound.startBGM();
+
+      clearInterval(timer);
+
+      // モグラ出現用ループ
+      const spawnTimer = setInterval(() => {
+        if (!gameRunning) {
+          clearInterval(spawnTimer);
+          return;
+        }
+        showMole();
+      }, spawnSpeed);
+
+      // カウントダウンタイマー
+      timer = setInterval(() => {
+        time--;
+        timeText.textContent = time;
+
+        if (time <= 10) {
+          // 残り時間が少ないと焦る赤字にする
+          timeText.classList.add("text-rose-600", "scale-110");
+        } else {
+          timeText.classList.remove("text-rose-600", "scale-110");
+        }
+
+        if (time <= 0) {
+          clearInterval(timer);
+          clearInterval(spawnTimer);
+          endGame();
+        }
+      }, 1000);
+    }
+
+    // ゲーム終了
+    function endGame() {
+      gameRunning = false;
+      sound.stopBGM();
+      sound.playFanfare();
+
+      // UIをリセット
+      startBtn.disabled = false;
+      startBtn.classList.remove("opacity-50", "cursor-not-allowed");
+
+      // 称号の決定
+      let rank = "🌱 もぐらビギナー";
+      if (score >= 250) {
+        rank = "👑 もぐら神皇帝";
+      } else if (score >= 180) {
+        rank = "🏆 もぐらマスター";
+      } else if (score >= 100) {
+        rank = "🥕 もぐらハンター";
+      } else if (score >= 50) {
+        rank = "🐹 もぐらの一味";
+      }
+
+      // モーダルの表示
+      finalScore.textContent = score;
+      rankText.textContent = rank;
+      
+      resultModal.classList.remove("hidden");
+      setTimeout(() => {
+        resultModal.classList.remove("opacity-0");
+        resultModal.querySelector(".transform").classList.remove("scale-90");
+      }, 50);
+    }
+
+    // モーダルを閉じる
+    function closeModal() {
+      resultModal.classList.add("opacity-0");
+      resultModal.querySelector(".transform").classList.add("scale-90");
+      setTimeout(() => {
+        resultModal.classList.add("hidden");
+      }, 300);
+    }
+
+    // BGMのトグル
+    function toggleBGM() {
+      sound.init();
+      sound.bgmEnabled = !sound.bgmEnabled;
+      
+      if (sound.bgmEnabled) {
+        bgmIcon.textContent = "🔊";
+        bgmText.textContent = "BGM: ON";
+        if (gameRunning) {
+          sound.startBGM();
+        }
+      } else {
+        bgmIcon.textContent = "🎵";
+        bgmText.textContent = "BGM: OFF";
+        sound.stopBGM();
+      }
+    }
+
+    startBtn.addEventListener("click", () => {
+      // ユーザー操作をトリガーにしてAudioContextを有効化
+      sound.init();
+      startGame();
+    });
+    
+    bgmBtn.addEventListener("click", toggleBGM);
+    restartBtn.addEventListener("click", () => {
+      closeModal();
+      startGame();
+    });
+    closeModalBtn.addEventListener("click", closeModal);
+
+    // 初期化
+    createBoard();
+  </script>
 </body>
 </html>
